@@ -86,7 +86,7 @@ public:
     //
     // internally used, but public functions
     //
-    // resets running-status (used in _run_proc, see Thread.cc)
+    // resets running-status (used in _service, see Thread.cc)
     void resetRunning();
 protected:
     //
