@@ -24,17 +24,16 @@ namespace TTP
 void* Thread::_service(void* arg)
 {
     ThreadFunctor* threadFunctorPtr = static_cast<ThreadFunctor*>(arg);
-    assert(threadFunctorPtr != NULL);
+    assert(threadFunctorPtr != NULL && threadFunctorPtr->thread != NULL);
     void *ret = NULL;
     if(threadFunctorPtr->type == ThreadFunctor::THREAD_TYPE_FUNC) {
         ret = threadFunctorPtr->f(threadFunctorPtr->arg);
+        threadFunctorPtr->thread->resetRunning();
         pthread_exit(NULL);
     }
     else {
-        Thread *threadPtr = static_cast<Thread*>(threadFunctorPtr->arg);
-        assert(threadPtr != NULL);
-        threadPtr->run();
-        threadPtr->resetRunning();
+        threadFunctorPtr->thread->run();
+        threadFunctorPtr->thread->resetRunning();
     }
     return ret;
 }
@@ -55,8 +54,9 @@ Thread::Thread()
 :m_id(-1),m_name("Thread"),m_running(false)
 {
     m_threadFunctor = new ThreadFunctor();
+    m_threadFunctor->thread = this;
     m_threadFunctor->f = NULL;
-    m_threadFunctor->arg = this;
+    m_threadFunctor->arg = NULL;
     m_threadFunctor->type = ThreadFunctor::THREAD_TYPE_RUN;
     pthread_mutex_init(&m_mutex, NULL);
     pthread_cond_init(&m_cond, NULL);
@@ -66,6 +66,7 @@ Thread::Thread(ThreadFunc f, void* arg)
 :m_id(-1),m_name("Thread"),m_running(false)
 {
     m_threadFunctor = new ThreadFunctor();
+    m_threadFunctor->thread = this;
     m_threadFunctor->f = f;
     m_threadFunctor->arg = arg;
     m_threadFunctor->type = ThreadFunctor::THREAD_TYPE_FUNC;
@@ -198,22 +199,19 @@ void Thread::execute(const bool detached,const bool sscope)
         pthread_attr_setstacksize(&thread_attr,2*1024*1024);
 #endif
 
-        m_running = true;
-
         if ((status = pthread_create(&m_pthread, &thread_attr,_service,m_threadFunctor)) != 0) {
             std::cerr << "Thread create : pthread_create ("
                     << strerror(status) << ")" << std::endl;
         }
         else {
-            m_running = false; // THREAD_TYPE_FUNC
+            m_running = true;
         }
 
         // remove attribute
         pthread_attr_destroy(&thread_attr);
 
-    }// if
-    else
-    {
+    }
+    else {
         std::cout << "Thread create : thread is already running" << std::endl;
     }
 }

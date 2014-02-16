@@ -31,9 +31,10 @@ public:
         THREAD_TYPE_FUNC = 0, // ThreadFunc
         THREAD_TYPE_RUN  = 1  // run()
     };
-	ThreadFunctor():f(NULL),arg(NULL),type(THREAD_TYPE_FUNC){}
+	ThreadFunctor():thread(NULL),f(NULL),arg(NULL),type(THREAD_TYPE_FUNC){}
 	~ThreadFunctor(){}
 public:
+	Thread *thread;
 	ThreadFunc f;
 	void* arg;
 	int type;
@@ -85,7 +86,7 @@ public:
     //
     // internally used, but public functions
     //
-    // resets running-status (used in _run_proc, see ucThread.cpp)
+    // resets running-status (used in _run_proc, see Thread.cc)
     void resetRunning();
 protected:
     //
