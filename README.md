@@ -1,0 +1,54 @@
+
+```
+==================
+TinyThreadPool Library
+==================
+
+Introduction
+------------
+
+This library implements a thread pool based on POSIX threads. The pool
+has a set of p threads available after initialisation and executes any
+given tasks on the first free thread in the pool. After finishing the
+execution, the now idle thread is again available for other tasks.
+
+The reason for keeping the execution threads active the whole time is
+the time for starting a new thread, which can be rather large compared
+to the time for the simple assignment of a tasks to a thread. Especially
+for small tasks, the overhead due to thread creation can be visible or
+event dominant.
+
+Installation
+------------
+
+you can use Eclipse CDT open this project.In "config.mk" are compiler 
+definitions for Linux, Solaris, AIX and HP-UX.
+Other systems should also work.
+
+After entering "make" (GNU make !), the library "libthrpool.a" should reside
+in the main directory. 
+
+Unfortunately, no "make install" is provided. To compile your own programs
+you have to pass
+
+  -I<path_to_thrpool>/src -L<path_to_thrpool> -lthrpool
+
+to your compiler.
+
+Usage
+-----
+In the "test/" sub directory, some examples for the usage of the thread pool
+are given.
+
+License
+-------
+see License file
+
+Acknowledgements
+-------
+rok@mis.mpg.de
+Schindlerlee@gmail.com
+sumeet.chhetri@gmail.com
+http://www.eclipse.org/
+http://pocoproject.org/
+```
