@@ -37,11 +37,11 @@ Semaphore::Semaphore(int n, int max)
     _max = max;
 
     if (pthread_mutex_init(&_mutex, NULL)) {
-        fprintf(stderr,"cannot create semaphore (mutex)");
+        fprintf(stderr,"cannot create semaphore (mutex)\n");
         throw;
     }
     if (pthread_cond_init(&_cond, NULL)) {
-        fprintf(stderr,"cannot create semaphore (condition)");
+        fprintf(stderr,"cannot create semaphore (condition)\n");
         throw;
     }
 }
@@ -55,7 +55,7 @@ Semaphore::~Semaphore()
 void Semaphore::set()
 {
     if (pthread_mutex_lock(&_mutex)) {
-        fprintf(stderr,"cannot signal semaphore (lock)");
+        fprintf(stderr,"cannot signal semaphore (lock)\n");
         throw;
     }
 
@@ -64,13 +64,13 @@ void Semaphore::set()
     }
     else {
         pthread_mutex_unlock(&_mutex);
-        fprintf(stderr,"cannot signal semaphore: count would exceed maximum");
+        fprintf(stderr,"cannot signal semaphore: count would exceed maximum\n");
         throw;
     }
 
     if (pthread_cond_signal(&_cond)) {
         pthread_mutex_unlock(&_mutex);
-        fprintf(stderr,"cannot signal semaphore");
+        fprintf(stderr,"cannot signal semaphore\n");
         throw;
     }
 
@@ -80,14 +80,14 @@ void Semaphore::set()
 void Semaphore::wait()
 {
     if (pthread_mutex_lock(&_mutex)) {
-        fprintf(stderr,"wait for semaphore failed (lock)");
+        fprintf(stderr,"wait for semaphore failed (lock)\n");
         throw;
     }
 
     while (_n < 1) {
         if (pthread_cond_wait(&_cond, &_mutex)) {
             pthread_mutex_unlock(&_mutex);
-            fprintf(stderr,"wait for semaphore failed");
+            fprintf(stderr,"wait for semaphore failed\n");
             throw;
         }
     }
@@ -111,7 +111,7 @@ bool Semaphore::tryWait(long milliseconds)
     }
 
     if (pthread_mutex_lock(&_mutex) != 0) {
-        fprintf(stderr,"wait for semaphore failed (lock)");
+        fprintf(stderr,"wait for semaphore failed (lock)\n");
         throw;
     }
 
@@ -119,7 +119,7 @@ bool Semaphore::tryWait(long milliseconds)
         if ((rc = pthread_cond_timedwait(&_cond, &_mutex, &abstime))) {
             if (rc == ETIMEDOUT) break;
             pthread_mutex_unlock(&_mutex);
-            fprintf(stderr,"cannot wait for semaphore");
+            fprintf(stderr,"cannot wait for semaphore\n");
             throw;
         }
     }
@@ -147,7 +147,7 @@ Mutex::Mutex()
 
     if (pthread_mutex_init(&_mutex, &attr)) {
         pthread_mutexattr_destroy(&attr);
-        fprintf(stderr,"cannot create mutex");
+        fprintf(stderr,"cannot create mutex\n");
         throw;
     }
     pthread_mutexattr_destroy(&attr);
@@ -164,7 +164,7 @@ Mutex::Mutex(bool fast)
 
     if (pthread_mutex_init(&_mutex, &attr)) {
         pthread_mutexattr_destroy(&attr);
-        fprintf(stderr,"cannot create mutex");
+        fprintf(stderr,"cannot create mutex\n");
         throw;
     }
     pthread_mutexattr_destroy(&attr);
@@ -173,6 +173,10 @@ Mutex::Mutex(bool fast)
 Mutex::~Mutex()
 {
     pthread_mutex_destroy(&_mutex);
+}
+
+void Mutex::lock() {
+    pthread_mutex_lock(&_mutex);
 }
 
 bool Mutex::tryLock()
@@ -185,7 +189,7 @@ bool Mutex::tryLock()
         return false;
     }
     else {
-        fprintf(stderr,"cannot lock mutex");
+        fprintf(stderr,"cannot lock mutex\n");
         return false; // friendly
     }
 }
@@ -209,10 +213,65 @@ bool Mutex::tryLock(long milliseconds)
         return false;
     }
     else {
-        fprintf(stderr,"cannot lock mutex");
+        fprintf(stderr,"cannot lock mutex\n");
         return false; // friendly
     }
 
+}
+
+void Mutex::unlock() {
+    pthread_mutex_unlock(&_mutex);
+}
+
+bool Mutex::is_locked () {
+    if ( pthread_mutex_trylock( &_mutex ) != 0 ) {
+        return true;
+    }
+
+    unlock();
+    return false;
+}
+
+//
+// ScopedLock
+//
+ScopedLock::ScopedLock(Mutex& mutex)
+:_mutex(mutex)
+{
+    _mutex.lock();
+}
+
+ScopedLock::~ScopedLock()
+{
+    _mutex.unlock();
+}
+
+//
+// Condition
+//
+Condition::Condition()
+{
+    pthread_cond_init(&_cond,NULL);
+}
+
+Condition::~Condition()
+{
+    pthread_cond_destroy(&_cond );
+}
+
+void Condition::wait()
+{
+    pthread_cond_wait(&_cond,&_mutex);
+}
+
+void Condition::signal()
+{
+    pthread_cond_signal(&_cond);
+}
+
+void Condition::broadcast()
+{
+    pthread_cond_broadcast(&_cond );
 }
 
 //
@@ -221,7 +280,7 @@ bool Mutex::tryLock(long milliseconds)
 RWLock::RWLock()
 {
     if (pthread_rwlock_init(&_rwl, NULL)) {
-        fprintf(stderr,"cannot create reader/writer lock");
+        fprintf(stderr,"cannot create reader/writer lock\n");
         throw;
     }
 }
@@ -234,7 +293,7 @@ RWLock::~RWLock()
 void RWLock::readLock()
 {
     if (pthread_rwlock_rdlock(&_rwl)) {
-        fprintf(stderr,"cannot lock reader/writer lock");
+        fprintf(stderr,"cannot lock reader/writer lock\n");
         throw;
     }
 }
@@ -249,7 +308,7 @@ bool RWLock::tryReadLock()
         return false;
     }
     else {
-        fprintf(stderr,"cannot lock reader/writer lock");
+        fprintf(stderr,"cannot lock reader/writer lock\n");
         return false; // friendly
     }
 
@@ -258,7 +317,7 @@ bool RWLock::tryReadLock()
 void RWLock::writeLock()
 {
     if (pthread_rwlock_wrlock(&_rwl)) {
-        fprintf(stderr,"cannot lock reader/writer lock");
+        fprintf(stderr,"cannot lock reader/writer lock\n");
         throw;
     }
 }
@@ -273,7 +332,7 @@ bool RWLock::tryWriteLock()
         return false;
     }
     else {
-        fprintf(stderr,"cannot lock reader/writer lock");
+        fprintf(stderr,"cannot lock reader/writer lock\n");
         return false; // friendly
     }
 }
@@ -281,7 +340,7 @@ bool RWLock::tryWriteLock()
 void RWLock::unlock()
 {
     if (pthread_rwlock_unlock(&_rwl)) {
-        fprintf(stderr,"cannot unlock mutex");
+        fprintf(stderr,"cannot unlock mutex\n");
         throw;
     }
 }
@@ -327,6 +386,90 @@ ScopedWriteRWLock::ScopedWriteRWLock(RWLock& rwl)
 
 ScopedWriteRWLock::~ScopedWriteRWLock()
 {
+}
+
+Event::Event(bool autoReset)
+:_auto(autoReset)
+,_state(false)
+{
+    if (pthread_mutex_init(&_mutex, NULL)) {
+        fprintf(stderr,"cannot create event (mutex)\n");
+        throw;
+    }
+
+    if (pthread_cond_init(&_cond, NULL)) {
+        fprintf(stderr,"cannot create event (condition)\n");
+        throw;
+    }
+}
+
+
+Event::~Event()
+{
+    pthread_cond_destroy(&_cond);
+    pthread_mutex_destroy(&_mutex);
+}
+
+
+void Event::wait()
+{
+    if (pthread_mutex_lock(&_mutex)) {
+        fprintf(stderr,"wait for event failed (lock)\n");
+        throw;
+    }
+
+    while (!_state) {
+        if (pthread_cond_wait(&_cond, &_mutex)) {
+            pthread_mutex_unlock(&_mutex);
+            fprintf(stderr,"wait for event failed\n");
+            throw;
+        }
+    }
+
+    if (_auto) {
+        _state = false;
+    }
+
+    pthread_mutex_unlock(&_mutex);
+}
+
+
+bool Event::wait(long milliseconds)
+{
+    int rc = 0;
+    struct timespec abstime;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    abstime.tv_sec  = tv.tv_sec + milliseconds / 1000;
+    abstime.tv_nsec = tv.tv_usec*1000 + (milliseconds % 1000)*1000000;
+    if (abstime.tv_nsec >= 1000000000) {
+        abstime.tv_nsec -= 1000000000;
+        abstime.tv_sec++;
+    }
+
+    if (pthread_mutex_lock(&_mutex) != 0) {
+        fprintf(stderr,"wait for event failed (lock)\n");
+        throw;
+    }
+
+    while (!_state) {
+        if ((rc = pthread_cond_timedwait(&_cond, &_mutex, &abstime))) {
+            if (rc == ETIMEDOUT) {
+                break;
+            }
+            pthread_mutex_unlock(&_mutex);
+            fprintf(stderr,"cannot wait for event\n");
+            throw;
+        }
+    }
+
+    if (rc == 0 && _auto) {
+        _state = false;
+    }
+
+    pthread_mutex_unlock(&_mutex);
+
+    return rc == 0;
 }
 
 } // namespace TTP

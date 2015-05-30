@@ -101,9 +101,7 @@ public:
 
     // Locks the mutex. Blocks if the mutex
     // is held by another thread.
-    void lock() {
-        pthread_mutex_lock(&_mutex);
-    }
+    void lock();
 
     // Tries to lock the mutex. Returns false immediately
     // if the mutex is already held by another thread.
@@ -117,20 +115,10 @@ public:
 
     // Unlocks the mutex so that it can be acquired by
     // other threads.
-    void unlock() {
-        pthread_mutex_unlock(&_mutex);
-    }
+    void unlock();
 
     // return true if mutex is locked and false, otherwise
-    bool is_locked () {
-        if ( pthread_mutex_trylock( &_mutex ) != 0 ) {
-            return true;
-        }
-        else {
-            unlock();
-            return false;
-        }// else
-    }
+    bool is_locked ();
 
 private:
     Mutex(const Mutex&);
@@ -149,13 +137,8 @@ protected:
 class ScopedLock
 {
 public:
-    explicit ScopedLock(Mutex& mutex): _mutex(mutex) {
-        _mutex.lock();
-    }
-
-    ~ScopedLock() {
-        _mutex.unlock();
-    }
+    ScopedLock(Mutex& mutex);
+    ~ScopedLock();
 
 private:
     ScopedLock();
@@ -174,28 +157,20 @@ private:
 class Condition : public Mutex
 {
 public:
-    //
-    // constructor and destructor
-    //
+    // constructor
+    Condition();
 
-    // ctor
-    Condition() { pthread_cond_init(    & _cond, NULL ); }
-
-    // dtor
-    ~Condition() { pthread_cond_destroy( & _cond ); }
-
-    //
-    // condition variable related methods
-    //
+    // destructor
+    ~Condition();
 
     // wait for signal to arrive
-    void wait() { pthread_cond_wait( & _cond, & _mutex ); }
+    void wait();
 
     // restart one of the threads, waiting on the cond. variable
-    void signal() { pthread_cond_signal( & _cond ); }
+    void signal();
 
     // restart all waiting threads
-    void broadcast() { pthread_cond_broadcast( & _cond ); }
+    void broadcast();
 
 private:
     // our condition variable
@@ -308,14 +283,8 @@ public:
     // Waits for the event to become signalled.
     // return false if the event
     // does not become signalled within the specified
-    // time interval.
-    bool wait(long milliseconds);
-
-    // Waits for the event to become signalled.
-    // Returns true if the event
-    // became signalled within the specified
     // time interval, false otherwise.
-    bool tryWait(long milliseconds);
+    bool wait(long milliseconds);
 
     // Resets the event to unsignalled state.
     void reset();
